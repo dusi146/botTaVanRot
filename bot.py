@@ -128,21 +128,34 @@ def sinh_noi_dung_va_prompt(chosen_card, is_conditional_style=False):
         return None, None
 
 def tao_va_up_anh(image_prompt):
-    print("2/4. Đang vẽ ảnh thực tế nghệ thuật bằng Pollinations (Flux)...")
-    seed = random.randint(1, 999999)
-    encoded_prompt = urllib.parse.quote(image_prompt)
-    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&model=flux&nologo=true&seed={seed}"
-    
-    img_response = requests.get(image_url)
-    
+  print("2/4. Đang vẽ ảnh thực tế nghệ thuật bằng Pollinations (Flux)...")
+  seed = random.randint(1, 999999)
+  encoded_prompt = urllib.parse.quote(image_prompt)
+  image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&model=flux&nologo=true&seed={seed}"
+
+  try:
+    img_response = requests.get(image_url, timeout=60)
+    if img_response.status_code != 200:
+      print(f"❌ Pollinations tạo ảnh thất bại (HTTP {img_response.status_code})")
+      return None
+
     print("3/4. Đang up ảnh lên ImgBB lấy link public...")
     imgbb_url = "https://api.imgbb.com/1/upload"
     payload = {
         "key": IMGBB_API_KEY,
-        "image": base64.b64encode(img_response.content)
+        "image": base64.b64encode(img_response.content),
     }
     res = requests.post(imgbb_url, data=payload).json()
-    return res['data']['url']
+
+    if "data" in res and "url" in res["data"]:
+      return res["data"]["url"]
+    else:
+      print("❌ ImgBB trả về lỗi:", res)
+      return None
+
+  except Exception as e:
+    print("❌ Lỗi khi xử lý ảnh:", e)
+    return None
 
 def dang_bai_len_threads(final_caption, image_url):
     print("4/4. Đang gửi bài lên Threads...")
