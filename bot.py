@@ -88,7 +88,7 @@ def sinh_noi_dung_va_prompt(chosen_card, is_conditional_style=False):
         """
 
     data = {
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "model": "deepseek/deepseek-chat",
         "messages": [{"role": "user", "content": prompt_style}],
     }
 
