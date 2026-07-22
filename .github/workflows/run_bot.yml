@@ -2,16 +2,23 @@ name: Auto Tarot Bot Threads
 
 on:
   schedule:
-    - cron: '0,30 * * * *' # Chạy tự động 30 phút một lần
+    - cron: '0,30 * * * *'
   workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    
+    # Quan trọng: Cấp thêm quyền GITHUB_TOKEN trực tiếp tại đây cho chắc chắn
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # Dòng này giúp nó có quyền đẩy code
+          
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
