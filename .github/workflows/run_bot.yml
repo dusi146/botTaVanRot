@@ -8,16 +8,13 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    
-    # Quan trọng: Cấp thêm quyền GITHUB_TOKEN trực tiếp tại đây cho chắc chắn
     permissions:
       contents: write
-      
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }} # Dòng này giúp nó có quyền đẩy code
+          token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -29,7 +26,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
           
-      -- name: Run Bot Script
+      - name: Run Bot Script
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
