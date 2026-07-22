@@ -49,13 +49,18 @@ def is_peak_hour(hour):
     return 5 <= hour < 23
 
 def quan_ly_trang_thai():
-    # Reset hoặc khởi tạo mới từ số 01
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, "r", encoding="utf-8") as f:
-            state = json.load(f)
-    else:
-        state = {"msg_count": 1, "drawn_cards": []}
+    state = {"msg_count": 1, "drawn_cards": []}
     
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                content = f.read()
+                if content and content.strip():
+                    state = json.loads(content)
+        except Exception as e:
+            print(f"⚠️ Phát hiện file trạng thái lỗi ({e}), khởi tạo lại từ đầu...")
+            state = {"msg_count": 1, "drawn_cards": []}
+            
     available_cards = [card for card in TAROT_DECK if card not in state["drawn_cards"]]
     
     if not available_cards:
@@ -65,7 +70,6 @@ def quan_ly_trang_thai():
         
     chosen_card = random.choice(available_cards)
     return chosen_card, state
-
 def cap_nhat_trang_thai(state, chosen_card):
     state["drawn_cards"].append(chosen_card)
     state["msg_count"] += 1
