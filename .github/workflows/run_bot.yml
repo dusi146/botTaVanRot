@@ -1,0 +1,24 @@
+name Auto Tarot Bot Threads
+
+on
+  schedule
+    - cron '0    '
+  workflow_dispatch
+
+jobs
+  run-bot
+    runs-on ubuntu-latest
+    steps
+      - name Checkout code
+        uses actionscheckout@v3
+        
+      - name Setup Python
+        uses actionssetup-python@v4
+        with
+          python-version '3.10'
+          
+      - name Install Dependencies
+        run pip install requests
+          
+      - name Run Bot Script
+        run python bot.py
