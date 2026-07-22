@@ -1,34 +1,5 @@
 {
-    "msg_count": 30,
-    "drawn_cards": [
-        "Page of Cups",
-        "Queen of Wands",
-        "Nine of Pentacles",
-        "Seven of Swords",
-        "Queen of Pentacles",
-        "The Tower",
-        "The Devil",
-        "The Empress",
-        "The Chariot",
-        "The Fool",
-        "Two of Pentacles",
-        "Ten of Swords",
-        "Ten of Wands",
-        "The Star",
-        "Seven of Cups",
-        "Two of Wands",
-        "Six of Pentacles",
-        "Ace of Pentacles",
-        "Death",
-        "Seven of Wands",
-        "Eight of Pentacles",
-        "Five of Swords",
-        "The Sun",
-        "The Hierophant",
-        "Six of Wands",
-        "Eight of Wands",
-        "Nine of Wands",
-        "Two of Cups",
-        "Three of Cups"
-    ]
+    "date": "2026-07-22",
+    "deep_count": 1,
+    "total_posts": 1
 }
