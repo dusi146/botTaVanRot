@@ -179,7 +179,7 @@ if __name__ == "__main__":
         else:
             prefix = f"Thông điệp số {msg_num:02d}: "
             
-        suffix = "\n\n🫣 [Phần được tiết lộ]: Ghé ngay website tavanrot.online để xem chúng tôi có đọc được năng lượng của bạn không."
+        suffix = "\n\nGhé ngay website tavanrot.online để xem chúng tôi có đọc được năng lượng của bạn không."
         
         # Giới hạn 495 ký tự tối đa của Threads
         max_ai_len = 495 - len(prefix) - len(suffix)
