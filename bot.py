@@ -55,7 +55,7 @@ def cap_nhat_trang_thai(state, chosen_card):
 
 def sinh_noi_dung_va_prompt(chosen_card, is_conditional_style=False):
     print(f"1/4. Đang nhờ Gemini viết thông điệp cho lá {chosen_card}...")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {
         "Content-Type": "application/json",
     }
