@@ -85,7 +85,7 @@ def sinh_noi_dung(chosen_cards, is_deep_message=True):
         """
 
     data = {
-        "model": "meta-llama/llama-3.1-8b-instruct:free",
+        "model": "google/gemini-2.5-flash",
         "messages": [{"role": "user", "content": prompt_style}],
     }
 
