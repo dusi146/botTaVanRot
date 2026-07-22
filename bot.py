@@ -114,7 +114,7 @@ def tao_va_up_anh(chosen_cards):
     imagen_prompt = f"A highly detailed, ultra-realistic overhead macro photograph of {count} tarot cards lying organically on an antique, richly patterned Persian woven rug. The specific cards are: {names}. The cards are authentic Rider-Waite-Smith style, featuring accurate artwork, vivid symbolism, textured thick cardstock, and slightly worn edges indicating frequent use. They are placed distinctly without overlapping the main illustrations. The scene is illuminated by warm, cinematic ambient lighting with soft shadows, highlighting the tactile fabric texture of the rug. 8K resolution, masterpiece, professional studio photography, shallow depth of field focusing on the cards."
     
     try:
-        imagen_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-images:predict?key={GEMINI_API_KEY}"
+        imagen_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={GEMINI_API_KEY}"
         payload = {
             "instances": [{"prompt": imagen_prompt}],
             "parameters": {"sampleCount": 1, "aspectRatio": "1:1"}
