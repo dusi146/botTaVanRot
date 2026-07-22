@@ -6,12 +6,14 @@ import random
 import time
 import urllib.parse
 import requests
+from datetime import date
 
 # --- LẤY KEY TỪ MÔI TRƯỜNG GITHUB SECRETS ---
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 IMGBB_API_KEY = os.getenv("IMGBB_API_KEY")
 THREADS_ACCESS_TOKEN = os.getenv("THREADS_ACCESS_TOKEN")
-THREADS_USER_ID = "37602922189321771" # ID thì cứ để công khai không sao
+THREADS_USER_ID = "37602922189321771"
 
 # --- DANH SÁCH 78 LÁ BÀI TAROT ---
 TAROT_DECK = [
@@ -27,141 +29,140 @@ TAROT_DECK = [
 STATE_FILE = "tarot_state.json"
 
 def quan_ly_trang_thai():
-    state = {"msg_count": 1, "drawn_cards": []}
+    today_str = date.today().isoformat()
+    # Khởi tạo mặc định
+    state = {"date": today_str, "deep_count": 0, "total_posts": 0}
+    
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, "r", encoding="utf-8") as f:
                 content = f.read()
                 if content and content.strip():
-                    state = json.loads(content)
+                    loaded_state = json.loads(content)
+                    # Nếu sang ngày mới -> reset deep_count về 0
+                    if loaded_state.get("date") != today_str:
+                        state["total_posts"] = loaded_state.get("total_posts", 0)
+                    else:
+                        state = loaded_state
         except Exception as e:
             print(f"⚠️ File trạng thái lỗi ({e}), khởi tạo lại...")
-            state = {"msg_count": 1, "drawn_cards": []}
 
-    available_cards = [card for card in TAROT_DECK if card not in state["drawn_cards"]]
+    # Bốc ngẫu nhiên 1, 2, hoặc 3 lá (Tỉ lệ: 70% 1 lá, 20% 2 lá, 10% 3 lá)
+    num_cards = random.choices([1, 2, 3], weights=[0.7, 0.2, 0.1])[0]
+    chosen_cards = random.sample(TAROT_DECK, num_cards)
+    
+    return chosen_cards, state
 
-    if not available_cards:
-        print("🔄 Đã bốc hết 78 lá. Đang xào bài lại từ đầu...")
-        state["drawn_cards"] = []
-        available_cards = TAROT_DECK
-
-    chosen_card = random.choice(available_cards)
-    return chosen_card, state
-
-def cap_nhat_trang_thai(state, chosen_card):
-    state["drawn_cards"].append(chosen_card)
-    state["msg_count"] += 1
+def cap_nhat_trang_thai(state, is_deep):
+    state["total_posts"] += 1
+    if is_deep:
+        state["deep_count"] += 1
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=4)
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-def sinh_noi_dung_va_prompt(chosen_card, is_conditional_style=False):
-    print(f"1/4. Đang nhờ OpenRouter viết thông điệp cho lá {chosen_card}...")
+def sinh_noi_dung(chosen_cards, is_deep_message=True):
+    cards_str = ", ".join(chosen_cards)
+    print(f"1/4. Đang nhờ OpenRouter viết cho: {cards_str}...")
+    
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
     }
 
-    if is_conditional_style:
+    if is_deep_message:
         prompt_style = f"""
-        Tôi vừa bốc được lá Tarot: '{chosen_card}'.
-        Hãy viết caption dạng tình huống/cảm xúc ngắn gọn theo mẫu:
-        "Nếu hôm nay bạn [điền 1 cảm xúc/tình huống thực tế mà người đọc đang gặp phải], thì lá bài {chosen_card} muốn nhắn với bạn rằng [lời khuyên/thông điệp ngắn gọn tối đa 2 câu]."
-        
-        Trả về đúng định dạng JSON:
-        {{
-            "message": "Viết theo đúng mẫu câu trên, ngắn gọn, tự nhiên, chạm tới cảm xúc.",
-            "image_prompt": "An artistic close-up photograph of a real vintage tarot card ({chosen_card}) lying gracefully on a cozy, bohemian patterned woven rug, warm ambient moody lighting, highly detailed fabric texture, photorealistic, aesthetic."
-        }}
+        Tôi vừa bốc được các lá Tarot: {cards_str}.
+        Hãy viết một đoạn thông điệp ngắn gọn (tối đa 3 câu) giới thiệu năng lượng kết hợp của các lá này và đưa ra 1 lời khuyên thực tế.
+        Trả về đúng định dạng JSON: {{"message": "Nội dung..."}}
         """
     else:
         prompt_style = f"""
-        Tôi vừa bốc được lá Tarot: '{chosen_card}'.
-        Hãy viết caption ngắn gọn (tối đa 3 câu) giới thiệu năng lượng của lá {chosen_card} và đưa ra 1 lời khuyên thực tế.
-        
-        Trả về đúng định dạng JSON:
-        {{
-            "message": "Nội dung thông điệp ngắn gọn.",
-            "image_prompt": "An artistic close-up photograph of a real vintage tarot card ({chosen_card}) lying gracefully on a cozy, bohemian patterned woven rug, warm ambient moody lighting, highly detailed fabric texture, photorealistic, aesthetic."
-        }}
+        Tôi vừa bốc được các lá Tarot: {cards_str}.
+        Hãy viết caption dạng tình huống ngắn gọn theo mẫu:
+        "Nếu hôm nay bạn [điền 1 cảm xúc/tình huống], thì các lá bài {cards_str} muốn nhắn với bạn rằng [lời khuyên tối đa 2 câu]."
+        Trả về đúng định dạng JSON: {{"message": "Nội dung..."}}
         """
 
     data = {
-        "model": "deepseek/deepseek-chat",
+        "model": "meta-llama/llama-3.1-8b-instruct:free",
         "messages": [{"role": "user", "content": prompt_style}],
     }
 
     try:
         response = requests.post(url, headers=headers, json=data)
         res_json = response.json()
-
         if "choices" not in res_json:
-            print("❌ OpenRouter trả về lỗi:", res_json)
-            return None, None
-
+            return None
         content = res_json["choices"][0]["message"]["content"]
-        
         match = re.search(r"\{.*\}", content, re.DOTALL)
-        if not match:
-            return None, None
-            
-        data_json = json.loads(match.group(0))
-        message = data_json.get("message", f"Lá bài {chosen_card} mang đến thông điệp dành cho bạn ngày hôm nay.")
-        image_prompt = data_json.get("image_prompt", f"An artistic close-up photograph of a real vintage tarot card ({chosen_card}) lying gracefully on a cozy, bohemian patterned woven rug, warm ambient moody lighting, highly detailed fabric texture, photorealistic, aesthetic.")
-
-        return message, image_prompt
+        if match:
+            return json.loads(match.group(0)).get("message")
+        return None
     except Exception as e:
-        print("Lỗi xử lý dữ liệu từ OpenRouter:", e)
-        return None, None
+        print("Lỗi OpenRouter:", e)
+        return None
 
-        content = res_json["candidates"][0]["content"]["parts"][0]["text"]
-        data_json = json.loads(content)
+def tao_va_up_anh(chosen_cards):
+    count = len(chosen_cards)
+    names = ", ".join(chosen_cards)
+    
+    print("2/4. Đang xử lý ảnh...")
+    image_bytes = None
+    
+    # 1. THỬ TẠO ẢNH BẰNG GOOGLE IMAGEN 3 TRƯỚC
+    imagen_prompt = f"A highly detailed, ultra-realistic overhead macro photograph of {count} tarot cards lying organically on an antique, richly patterned Persian woven rug. The specific cards are: {names}. The cards are authentic Rider-Waite-Smith style, featuring accurate artwork, vivid symbolism, textured thick cardstock, and slightly worn edges indicating frequent use. They are placed distinctly without overlapping the main illustrations. The scene is illuminated by warm, cinematic ambient lighting with soft shadows, highlighting the tactile fabric texture of the rug. 8K resolution, masterpiece, professional studio photography, shallow depth of field focusing on the cards."
+    
+    try:
+        imagen_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-images:predict?key={GEMINI_API_KEY}"
+        payload = {
+            "instances": [{"prompt": imagen_prompt}],
+            "parameters": {"sampleCount": 1, "aspectRatio": "1:1"}
+        }
+        res_imagen = requests.post(imagen_url, json=payload).json()
+        if "predictions" in res_imagen:
+            print("✅ Đã tạo ảnh thành công bằng Google Imagen 3.")
+            image_bytes = base64.b64decode(res_imagen["predictions"][0]["bytesBase64Encoded"])
+        else:
+            print("⚠️ Google Imagen 3 từ chối (Lỗi hoặc vi phạm chính sách). Chuyển sang Pollinations...")
+    except Exception as e:
+        print("⚠️ Lỗi gọi Google API, chuyển sang Pollinations:", e)
+
+    # 2. NẾU GOOGLE LỖI, DÙNG POLLINATIONS LÀM FALLBACK
+    if not image_bytes:
+        flux_prompt = f"Photorealistic top-down view of {count} tarot cards ({names}) on elegant vintage Persian rug, Rider-Waite style artwork, realistic paper texture, worn edges, warm cinematic lighting, woven fabric texture, mystical atmosphere, macro photography, 8K, HDR, highly detailed, perfectly separated cards."
+        seed = random.randint(1, 999999)
+        encoded_prompt = urllib.parse.quote(flux_prompt)
+        pollinations_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&model=flux&nologo=true&seed={seed}"
         
-        message = data_json.get("message", f"Lá bài {chosen_card} mang đến thông điệp dành cho bạn ngày hôm nay.")
-        image_prompt = data_json.get("image_prompt", f"An artistic close-up photograph of a real vintage tarot card ({chosen_card}) lying gracefully on a cozy, bohemian patterned woven rug, warm ambient moody lighting, highly detailed fabric texture, photorealistic, aesthetic.")
+        try:
+            img_response = requests.get(pollinations_url, timeout=60)
+            if img_response.status_code == 200:
+                print("✅ Đã tạo ảnh thành công bằng Pollinations (Flux).")
+                image_bytes = img_response.content
+            else:
+                return None
+        except Exception as e:
+            print("❌ Lỗi Pollinations:", e)
+            return None
 
-        return message, image_prompt
+    # 3. UP ẢNH LÊN IMGBB
+    print("3/4. Đang up ảnh lên ImgBB...")
+    try:
+        imgbb_url = "https://api.imgbb.com/1/upload"
+        payload = {
+            "key": IMGBB_API_KEY,
+            "image": base64.b64encode(image_bytes),
+        }
+        res_bb = requests.post(imgbb_url, data=payload).json()
+        if "data" in res_bb and "url" in res_bb["data"]:
+            return res_bb["data"]["url"]
+        else:
+            print("❌ Lỗi ImgBB:", res_bb)
+            return None
     except Exception as e:
-        print("Lỗi xử lý dữ liệu từ Gemini:", e)
-        return None, None
-
-def tao_va_up_anh(image_prompt):
-  print("2/4. Đang vẽ ảnh thực tế nghệ thuật bằng Pollinations (Flux)...")
-  seed = random.randint(1, 999999)
-  encoded_prompt = urllib.parse.quote(image_prompt)
-  image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&model=flux&nologo=true&seed={seed}"
-
-  try:
-    img_response = requests.get(image_url, timeout=60)
-    if img_response.status_code != 200:
-      print(
-          f"❌ Pollinations tạo ảnh thất bại (HTTP {img_response.status_code})"
-      )
-      return None
-
-    print("3/4. Đang up ảnh lên ImgBB lấy link public...")
-    imgbb_url = "https://api.imgbb.com/1/upload"
-    payload = {
-        "key": IMGBB_API_KEY,
-        "image": base64.b64encode(img_response.content),
-    }
-    res = requests.post(imgbb_url, data=payload).json()
-
-    if "data" in res and "url" in res["data"]:
-      return res["data"]["url"]
-    else:
-      err_msg = res.get("error", {}).get("message", "Lỗi không xác định")
-      print(
-          f"⚠️ ImgBB lỗi/bảo trì ({err_msg}), chuyển sang dùng link trực tiếp"
-          " Pollinations..."
-      )
-      return image_url
-
-  except Exception as e:
-    print("❌ Lỗi xử lý ImgBB, dùng tạm link trực tiếp Pollinations:", e)
-    return image_url
+        print("❌ Lỗi up ảnh ImgBB:", e)
+        return None
 
 def dang_bai_len_threads(final_caption, image_url):
     print("4/4. Đang gửi bài lên Threads...")
@@ -196,42 +197,34 @@ def dang_bai_len_threads(final_caption, image_url):
         return False
 
 if __name__ == "__main__":
-    # Đổi chữ GEMINI thành OPENROUTER
-    if not OPENROUTER_API_KEY or not IMGBB_API_KEY or not THREADS_ACCESS_TOKEN:
-        print("❌ Thiếu API Key! Hãy kiểm tra lại cấu hình môi trường (GitHub Secrets).")
+    if not OPENROUTER_API_KEY or not GEMINI_API_KEY or not IMGBB_API_KEY or not THREADS_ACCESS_TOKEN:
+        print("❌ Thiếu API Key! Hãy kiểm tra lại cấu hình môi trường.")
         exit(1)
         
-    chosen_card, current_state = quan_ly_trang_thai()
-    # ... (phần còn lại giữ nguyên)
-    msg_num = current_state["msg_count"]
+    chosen_cards, current_state = quan_ly_trang_thai()
+    
+    # Xét xem bài này có phải bài Deep Message không (2 bài/ngày)
+    is_deep = (current_state["deep_count"] < 2)
+    
+    ai_msg = sinh_noi_dung(chosen_cards, is_deep_message=is_deep)
 
-    # Bài chẵn viết kiểu "Nếu hôm nay bạn...", bài lẻ viết "Thông điệp..."
-    is_conditional = (msg_num % 2 == 0)
-
-    ai_msg, img_prompt = sinh_noi_dung_va_prompt(chosen_card, is_conditional_style=is_conditional)
-
-    if ai_msg and img_prompt:
-        if is_conditional:
-            prefix = ""
-        else:
-            prefix = f"Thông điệp số {msg_num:02d}: "
-            
+    if ai_msg:
+        prefix = f"Thông điệp số {current_state['total_posts'] + 1}: " if is_deep else ""
         suffix = "\n\nGhé ngay website tavanrot.online để xem chúng tôi có đọc được năng lượng của bạn không."
         
-        # Giới hạn 495 ký tự tối đa của Threads
+        # Cắt bớt nếu quá 495 ký tự
         max_ai_len = 495 - len(prefix) - len(suffix)
         if len(ai_msg) > max_ai_len:
             ai_msg = ai_msg[:max_ai_len-3].strip() + "..."
             
         final_caption = prefix + ai_msg + suffix
-        print(f"\n--- CAPTION CHUẨN BỊ ĐĂNG ({len(final_caption)} ký tự) ---\n{final_caption}\n")
+        print(f"\n--- CAPTION CHUẨN BỊ ĐĂNG ---\n{final_caption}\n")
         
-        link_anh = tao_va_up_anh(img_prompt)
+        link_anh = tao_va_up_anh(chosen_cards)
         if link_anh:
-          success = dang_bai_len_threads(final_caption, link_anh)
-
-          if success:
-            cap_nhat_trang_thai(current_state, chosen_card)
-            print(f"=> Đã lưu trạng thái: Lá {chosen_card} vào sổ tay.")
+            success = dang_bai_len_threads(final_caption, link_anh)
+            if success:
+                cap_nhat_trang_thai(current_state, is_deep)
+                print(f"=> Đã lưu trạng thái bài đăng.")
         else:
-          print("⚠️ Bỏ qua đợt đăng này do không lấy được link ảnh.")
+            print("⚠️ Bỏ qua đợt đăng này do không tạo/up được ảnh.")
