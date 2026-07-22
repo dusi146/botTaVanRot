@@ -1,5 +1,5 @@
 {
-    "msg_count": 24,
+    "msg_count": 25,
     "drawn_cards": [
         "Page of Cups",
         "Queen of Wands",
@@ -23,6 +23,7 @@
         "Seven of Wands",
         "Eight of Pentacles",
         "Five of Swords",
-        "The Sun"
+        "The Sun",
+        "The Hierophant"
     ]
 }
