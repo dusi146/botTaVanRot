@@ -53,10 +53,13 @@ def cap_nhat_trang_thai(state, chosen_card):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=4)
 
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
 def sinh_noi_dung_va_prompt(chosen_card, is_conditional_style=False):
-    print(f"1/4. Đang nhờ Gemini viết thông điệp cho lá {chosen_card}...")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
+    print(f"1/4. Đang nhờ OpenRouter viết thông điệp cho lá {chosen_card}...")
+    url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
     }
 
@@ -85,19 +88,32 @@ def sinh_noi_dung_va_prompt(chosen_card, is_conditional_style=False):
         """
 
     data = {
-        "contents": [{"parts": [{"text": prompt_style}]}],
-        "generationConfig": {
-            "response_mime_type": "application/json"
-        }
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "messages": [{"role": "user", "content": prompt_style}],
     }
 
     try:
         response = requests.post(url, headers=headers, json=data)
         res_json = response.json()
 
-        if "candidates" not in res_json:
-            print("❌ Gemini trả về lỗi:", res_json)
+        if "choices" not in res_json:
+            print("❌ OpenRouter trả về lỗi:", res_json)
             return None, None
+
+        content = res_json["choices"][0]["message"]["content"]
+        
+        match = re.search(r"\{.*\}", content, re.DOTALL)
+        if not match:
+            return None, None
+            
+        data_json = json.loads(match.group(0))
+        message = data_json.get("message", f"Lá bài {chosen_card} mang đến thông điệp dành cho bạn ngày hôm nay.")
+        image_prompt = data_json.get("image_prompt", f"An artistic close-up photograph of a real vintage tarot card ({chosen_card}) lying gracefully on a cozy, bohemian patterned woven rug, warm ambient moody lighting, highly detailed fabric texture, photorealistic, aesthetic.")
+
+        return message, image_prompt
+    except Exception as e:
+        print("Lỗi xử lý dữ liệu từ OpenRouter:", e)
+        return None, None
 
         content = res_json["candidates"][0]["content"]["parts"][0]["text"]
         data_json = json.loads(content)
