@@ -176,12 +176,13 @@ def dang_bai_len_threads(final_caption, image_url):
         return False
 
 if __name__ == "__main__":
-    # Check xem có thiếu API Key không
-    if not GEMINI_API_KEY or not IMGBB_API_KEY or not THREADS_ACCESS_TOKEN:
+    # Đổi chữ GEMINI thành OPENROUTER
+    if not OPENROUTER_API_KEY or not IMGBB_API_KEY or not THREADS_ACCESS_TOKEN:
         print("❌ Thiếu API Key! Hãy kiểm tra lại cấu hình môi trường (GitHub Secrets).")
         exit(1)
-
+        
     chosen_card, current_state = quan_ly_trang_thai()
+    # ... (phần còn lại giữ nguyên)
     msg_num = current_state["msg_count"]
 
     # Bài chẵn viết kiểu "Nếu hôm nay bạn...", bài lẻ viết "Thông điệp..."
