@@ -221,12 +221,6 @@ if __name__ == "__main__":
         print(f"\n--- CAPTION CHUẨN BỊ ĐĂNG ({len(final_caption)} ký tự) ---\n{final_caption}\n")
         
         link_anh = tao_va_up_anh(img_prompt)
-        success = dang_bai_len_threads(final_caption, link_anh)
-        
-        if success:
-            cap_nhat_trang_thai(current_state, chosen_card)
-            print(f"=> Đã lưu trạng thái: Lá {chosen_card} vào sổ tay.")
-link_anh = tao_va_up_anh(img_prompt)
         if link_anh:
           success = dang_bai_len_threads(final_caption, link_anh)
 
