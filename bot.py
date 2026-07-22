@@ -136,7 +136,9 @@ def tao_va_up_anh(image_prompt):
   try:
     img_response = requests.get(image_url, timeout=60)
     if img_response.status_code != 200:
-      print(f"❌ Pollinations tạo ảnh thất bại (HTTP {img_response.status_code})")
+      print(
+          f"❌ Pollinations tạo ảnh thất bại (HTTP {img_response.status_code})"
+      )
       return None
 
     print("3/4. Đang up ảnh lên ImgBB lấy link public...")
@@ -150,12 +152,16 @@ def tao_va_up_anh(image_prompt):
     if "data" in res and "url" in res["data"]:
       return res["data"]["url"]
     else:
-      print("❌ ImgBB trả về lỗi:", res)
-      return None
+      err_msg = res.get("error", {}).get("message", "Lỗi không xác định")
+      print(
+          f"⚠️ ImgBB lỗi/bảo trì ({err_msg}), chuyển sang dùng link trực tiếp"
+          " Pollinations..."
+      )
+      return image_url
 
   except Exception as e:
-    print("❌ Lỗi khi xử lý ảnh:", e)
-    return None
+    print("❌ Lỗi xử lý ImgBB, dùng tạm link trực tiếp Pollinations:", e)
+    return image_url
 
 def dang_bai_len_threads(final_caption, image_url):
     print("4/4. Đang gửi bài lên Threads...")
